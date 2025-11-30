@@ -11,6 +11,7 @@ public class Customer {
     private String password;
     private Timestamp dataCreated;
     private Timestamp dataUpdated;
+    private String imagePath;
 
     public Customer() {
     }
@@ -85,6 +86,10 @@ public class Customer {
     public void setDataUpdated(Timestamp dataUpdated) {
         this.dataUpdated = dataUpdated;
     }
+
+    public String getImagePath() { return imagePath; }
+
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
 
     @Override
     public String toString() {

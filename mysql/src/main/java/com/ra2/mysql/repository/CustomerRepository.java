@@ -28,25 +28,12 @@ public class CustomerRepository {
             customer.setAge(rs.getInt("age"));
             customer.setCourse(rs.getString("course"));
             customer.setPassword(rs.getString("password"));
+            customer.setImagePath(rs.getString("image_path"));
             customer.setDataCreated(rs.getTimestamp("dataCreated"));
             customer.setDataUpdated(rs.getTimestamp("dataUpdated"));
 
             return customer;
         }
-    }
-
-    // Funció per afegir 10 usuaris d'exemple a la taula
-    public void addSampleUsers() {
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Nerea, Estudiant, 23, DAM, hello)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Estefania, Estudiant, 19, DAM, helloo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Bri, Estudiant, 20, DAW, hellooo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Kim, Estudiant, 26, DAM, helloooo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Mark, Estudiant, 21, DAM, hellooooo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Pere, Professor, 55, DAM, helloooooo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Mara, Estudiant, 30, DAM, helloooo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Lucas, Estudiant, 25, DAW, helloo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Sara, Estudiant, 22, ASIX, helloooo)");
-        jdbcTemplate.update("INSERT INTO customers (name, description, age, course, password) VALUES (Maria, Estudiant, 21, DAM, helloooooo)");
     }
 
     // Funció per obtenir tots els customers
@@ -63,12 +50,13 @@ public class CustomerRepository {
 
         // Insertem a la bbdd
         jdbcTemplate.update(
-                "INSERT INTO customers (name, description, age, course, password, dataCreated, dataUpdated) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO customers (name, description, age, course, password, image_path, dataCreated, dataUpdated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 customer.getName(),
                 customer.getDescription(),
                 customer.getAge(),
                 customer.getCourse(),
                 customer.getPassword(),
+                customer.getImagePath(),
                 customer.getDataCreated(),
                 customer.getDataUpdated()
         );
@@ -93,12 +81,13 @@ public class CustomerRepository {
     // Funció per actualitzar un customer existent
     public void updateCustomer(Customer customer) {
         jdbcTemplate.update(
-                "UPDATE customers SET name = ?, description = ?, age = ?, course = ?, password = ?, dataUpdated = ? WHERE id = ?",
+                "UPDATE customers SET name = ?, description = ?, age = ?, course = ?, password = ?, image_path = ?, dataUpdated = ? WHERE id = ?",
                 customer.getName(),
                 customer.getDescription(),
                 customer.getAge(),
                 customer.getCourse(),
                 customer.getPassword(),
+                customer.getImagePath(),
                 customer.getDataUpdated(),
                 customer.getId()
         );
@@ -117,5 +106,15 @@ public class CustomerRepository {
     // Funció per eliminar un customer per ID
     public void deleteCustomer(Long id) {
         jdbcTemplate.update("DELETE FROM customers WHERE id = ?", id);
+    }
+
+    // Funció per actualitzar el camp image_path d'un customer
+    public void updateCustomerImage(Long id, String imagePath) {
+        // Actualitza el camp image_path i dataUpdated
+        jdbcTemplate.update(
+                "UPDATE customers SET image_path = ?, dataUpdated = CURRENT_TIMESTAMP WHERE id = ?",
+                imagePath,
+                id
+        );
     }
 }
