@@ -64,11 +64,9 @@ public class CustomerRepository {
 
     // Funció per obtenir un customer per ID
     public Customer findById(Long id) {
-        List<Customer> customers = jdbcTemplate.query(
-                "SELECT * FROM customers WHERE id = ?",
-                new Object[]{id},
-                new CustomerRowMapper()
-        );
+
+        String sql = "SELECT * FROM customers WHERE id = ?";
+        List<Customer> customers = jdbcTemplate.query(sql, new CustomerRowMapper(), id);
 
         // Si la llista està buida, retornem null
         if (customers.isEmpty()) {

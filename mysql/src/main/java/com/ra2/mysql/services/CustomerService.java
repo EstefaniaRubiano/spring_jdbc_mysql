@@ -38,6 +38,7 @@ public class CustomerService {
 
     @Autowired
     ObjectMapper mapper;
+    @Autowired
     private CustomerRepository customerRepository;
 
     public void addCustomer(Customer customer) {
@@ -125,7 +126,7 @@ public class CustomerService {
     }
 
     // Mètode per guardar la imatge d'un customer i retornar la seva URL
-    public String saveCustomerImage(Long customerId, MultipartFile imageFile) {
+    public String saveCustomerImage(Long customerId, MultipartFile imageFile)  {
         // 1. Comprovar si existeix el customer
         Customer existingCustomer = customerRepository.findById(customerId);
         if (existingCustomer == null) {
@@ -133,7 +134,7 @@ public class CustomerService {
         }
 
         // 2. Crear carpeta src/main/resources/public/images si no existeix
-        Path uploadDir = Paths.get("src/main/resources/public/images");
+        Path uploadDir = Paths.get("mysql/src/main/resources/public/images");
         try {
             Files.createDirectories(uploadDir); // Crea el directori si no existeix
         } catch (IOException e) {
@@ -199,7 +200,7 @@ public class CustomerService {
         }
 
         // 6. Crear carpeta csv_processed si no existeix
-        Path processedDir = Paths.get("src/main/resources/public/csv_processed");
+        Path processedDir = Paths.get("mysql/src/main/resources/public/csv_processed");
         Files.createDirectories(processedDir);
 
         // 7. Guardar el fitxer CSV original a la carpeta processada
@@ -239,7 +240,7 @@ public class CustomerService {
         }
 
         // 5. Crear carpeta json_processed si no existeix
-        Path processedDir = Paths.get("src/main/resources/public/json_processed");
+        Path processedDir = Paths.get("mysql/src/main/resources/public/json_processed");
         Files.createDirectories(processedDir);
 
         // 6. Guardar el fitxer JSON a la carpeta processada

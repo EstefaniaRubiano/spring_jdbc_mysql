@@ -91,7 +91,6 @@ public class CustomerController {
 
         // Cridem al Service i retornem el resultat directament
         String imageUrl = customerService.saveCustomerImage(user_id, imageFile);
-
         return ResponseEntity.status(HttpStatus.OK).body("Imatge pujada correctament: " + imageUrl);
     }
 
