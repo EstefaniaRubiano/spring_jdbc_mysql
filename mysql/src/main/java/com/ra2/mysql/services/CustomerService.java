@@ -17,6 +17,7 @@ package com.ra2.mysql.services;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ra2.mysql.logging.CustomLogging;
 import com.ra2.mysql.model.Customer;
 import com.ra2.mysql.repository.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,110 +39,143 @@ public class CustomerService {
 
     @Autowired
     ObjectMapper mapper;
+
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private CustomLogging customLogging;
+
     public void addCustomer(Customer customer) {
-        // totes les validacions
-        validateCustomer(customer);
+        customLogging.logInfo("CustomerService", "addCustomer", "Creant un customer");
 
-        // Afegir timestamps
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        customer.setDataCreated(now);
-        customer.setDataUpdated(now);
+        try {
+            // totes les validacions
+            validateCustomer(customer);
+            // Afegir timestamps
+            Timestamp now = new Timestamp(System.currentTimeMillis());
+            customer.setDataCreated(now);
+            customer.setDataUpdated(now);
+            // GUardem a la base de dades
+            customerRepository.addCustomer(customer);
 
-        // GUardem a la base de dades
-        customerRepository.addCustomer(customer);
+            customLogging.logInfo("CustomerService", "addCustomer", "Customer creat correctament");
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "addCustomer",
+                    "L'estudiant amb nom: " + customer.getName() + " no s'ha creat correctament. Missatge d'error: " + e.getMessage(), e);
+            throw e;
+        }
     }
 
-    // OBtenim tots els customers
     public List<Customer> getAllCustomers() {
-        return customerRepository.findAll();
+        customLogging.logInfo("CustomerService", "getAllCustomers", "Consulta tots els customers");
+        try {
+            return customerRepository.findAll();
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "getAllCustomers", "Error obtenint tots els customers", e);
+            throw e;
+        }
     }
 
     public Customer getCustomerById(Long id) {
-        Customer customer = customerRepository.findById(id);
-        if (customer == null) {
-            throw new IllegalArgumentException("No s'ha trobat cap customer amb ID " + id);
+        customLogging.logInfo("CustomerService", "getCustomerById", "Consultant customer amb id: " + id);
+        try {
+            return customerRepository.findById(id);
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "getCustomerById", "Error consultant customer amb id: " + id, e);
+            throw e;
         }
-        return customer;
     }
 
     public Customer updateCustomer(Long id, Customer customerDetails) {
-        Customer existingCustomer = customerRepository.findById(id);
+        customLogging.logInfo("CustomerService", "updateCustomer", "Modificant customer amb id: " + id);
+        try {
+            Customer existingCustomer = customerRepository.findById(id);
 
-        if (existingCustomer == null) {
-            throw new IllegalArgumentException("No existeix el customer amb ID " + id);
+            // Si no existeix, llencem excepció directament
+            if (existingCustomer == null) {
+                throw new IllegalArgumentException("El customer amb id: " + id + " no existeix");
+            }
+
+            // Validacions
+            if (customerDetails.getName() != null) validateName(customerDetails.getName());
+            if (customerDetails.getAge() != 0) validateAge(customerDetails.getAge());
+            if (customerDetails.getPassword() != null) validatePassword(customerDetails.getPassword());
+            if (customerDetails.getDescription() != null) validateDescription(customerDetails.getDescription());
+            if (customerDetails.getCourse() != null) validateCourse(customerDetails.getCourse());
+
+            // Actualitzem els camps
+            existingCustomer.setName(customerDetails.getName());
+            existingCustomer.setDescription(customerDetails.getDescription());
+            existingCustomer.setAge(customerDetails.getAge());
+            existingCustomer.setCourse(customerDetails.getCourse());
+            existingCustomer.setPassword(customerDetails.getPassword());
+            existingCustomer.setDataUpdated(new Timestamp(System.currentTimeMillis()));
+
+            customerRepository.updateCustomer(existingCustomer);
+
+            return existingCustomer;
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "updateCustomer", "Error actualitzant customer amb id: " + id, e);
+            throw e;
         }
-
-        // Validacions
-        if (customerDetails.getName() != null) validateName(customerDetails.getName());
-        if (customerDetails.getAge() != 0) validateAge(customerDetails.getAge());
-        if (customerDetails.getPassword() != null) validatePassword(customerDetails.getPassword());
-        if (customerDetails.getDescription() != null) validateDescription(customerDetails.getDescription());
-        if (customerDetails.getCourse() != null) validateCourse(customerDetails.getCourse());
-
-        // Actualitzem els camps
-        existingCustomer.setName(customerDetails.getName());
-        existingCustomer.setDescription(customerDetails.getDescription());
-        existingCustomer.setAge(customerDetails.getAge());
-        existingCustomer.setCourse(customerDetails.getCourse());
-        existingCustomer.setPassword(customerDetails.getPassword());
-
-        // Actualitzem els timestamp
-        existingCustomer.setDataUpdated(new Timestamp(System.currentTimeMillis()));
-
-        // Guardem a la base de dades
-        customerRepository.updateCustomer(existingCustomer);
-
-        return existingCustomer;
     }
 
     public Customer updateCustomerAge(Long id, int age) {
-        Customer existingCustomer = customerRepository.findById(id);
+        customLogging.logInfo("CustomerService", "updateCustomerAge", "Modificant l'edat del customer amb id: " + id);
+        try {
+            Customer existingCustomer = customerRepository.findById(id);
 
-        if (existingCustomer == null) {
-            throw new IllegalArgumentException("No s'ha trobat cap customer amb ID " + id);
+            if (existingCustomer == null) {
+                throw new IllegalArgumentException("El customer amb id: " + id + " no existeix");
+            }
+
+            validateAge(age);
+
+            // Actualitzem només l'edat
+            existingCustomer.setAge(age);
+            existingCustomer.setDataUpdated(new Timestamp(System.currentTimeMillis()));
+
+            customerRepository.updateCustomerAge(existingCustomer);
+
+            return existingCustomer;
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "updateCustomerAge", "Error modificant l'edat del customer amb id: " + id, e);
+            throw e;
         }
-
-        validateAge(age);
-
-        // Actualitzem solament el age
-        existingCustomer.setAge(age);
-        existingCustomer.setDataUpdated(new Timestamp(System.currentTimeMillis()));
-
-        customerRepository.updateCustomerAge(existingCustomer);
-        return existingCustomer;
     }
 
     public String deleteCustomer(Long id) {
-        Customer existingCustomer = customerRepository.findById(id);
+        customLogging.logInfo("CustomerService", "deleteCustomer", "Borrant el customer amb id: " + id);
+        try {
+            Customer existingCustomer = customerRepository.findById(id);
 
-        if (existingCustomer == null) {
-            return "Customer amb ID " + id + " no existeix";
+            if (existingCustomer == null) {
+                throw new IllegalArgumentException("El customer amb id: " + id + " no existeix");
+            }
+
+            customerRepository.deleteCustomer(id);
+
+            return "Customer amb ID " + id + " eliminat correctament";
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "deleteCustomer", "Error borrant el customer amb id: " + id, e);
+            throw e;
         }
-
-        customerRepository.deleteCustomer(id);
-        return "Customer amb ID " + id + " eliminat correctament";
     }
 
-    // Mètode per guardar la imatge d'un customer i retornar la seva URL
-    public String saveCustomerImage(Long customerId, MultipartFile imageFile)  {
-        // 1. Comprovar si existeix el customer
-        Customer existingCustomer = customerRepository.findById(customerId);
-        if (existingCustomer == null) {
-            throw new IllegalArgumentException("Customer amb ID " + customerId + " no existeix");
-        }
-
-        // 2. Crear carpeta src/main/resources/public/images si no existeix
-        Path uploadDir = Paths.get("mysql/src/main/resources/public/images");
+    public String saveCustomerImage(Long customerId, MultipartFile imageFile) {
+        customLogging.logInfo("CustomerService", "saveCustomerImage", "Afegint la imatge " + imageFile.getOriginalFilename() + " per al customer amb id: " + customerId);
         try {
-            Files.createDirectories(uploadDir); // Crea el directori si no existeix
-        } catch (IOException e) {
-            throw new RuntimeException("Error al crear la carpeta d'imatges: " + e.getMessage());
-        }
+            // 1. Comprovar si existeix el customer
+            Customer existingCustomer = customerRepository.findById(customerId);
+            if (existingCustomer == null) {
+                throw new IllegalArgumentException("Customer amb ID " + customerId + " no existeix");
+            }
 
-        try {
+            // 2. Crear carpeta src/main/resources/public/images si no existeix
+            Path uploadDir = Paths.get("mysql/src/main/resources/public/images");
+            Files.createDirectories(uploadDir);
+
             // 3. Crear un nom únic per la imatge
             String originalFilename = imageFile.getOriginalFilename(); // nom original
             String uniqueFilename = customerId + "_" + System.currentTimeMillis() + "_" + originalFilename;
@@ -158,20 +192,19 @@ public class CustomerService {
             // 7. Actualitzar la BD amb la ruta de la imatge
             customerRepository.updateCustomerImage(customerId, relativePath);
 
-            // Retornar la URL relativa de la imatge
+            customLogging.logInfo("CustomerService", "saveCustomerImage", "La imatge s'ha guardat correctament. El path és: " + relativePath);
             return relativePath;
 
-        } catch (IOException e) {
-            // Captura errors d'entrada/sortida
-            throw new RuntimeException("Error al guardar la imatge: " + e.getMessage());
+        } catch (Exception e) {
+            customLogging.logError("CustomerService", "saveCustomerImage", "Error afegint la imatge " + imageFile.getOriginalFilename() + " per al customer amb id: " + customerId, e);
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 
-    // Funció per processar un fitxer CSV i afegir customers a la base de dades
-    public int uploadCsv(MultipartFile csvFile) throws IOException {
-        int totalAdded = 0; // Comptador de registres afegits
+    public int uploadCsv(MultipartFile csvFile) {
+        customLogging.logInfo("CustomerService", "uploadCsv", "Carregant la informació del fitxer " + csvFile.getOriginalFilename());
+        int totalAdded = 0;
 
-        // 1. Llegir el CSV directament des del MultipartFile amb InputStreamReader
         try (BufferedReader br = new BufferedReader(new InputStreamReader(csvFile.getInputStream()))) {
             String line;
             int lineNumber = 0;
@@ -179,75 +212,126 @@ public class CustomerService {
             while ((line = br.readLine()) != null) {
                 lineNumber++;
 
-                // 2. Saltar capçalera
+                // Saltar capçalera
                 if (lineNumber == 1) continue;
 
-                // 3. Separar camps per comes
-                String[] fields = line.split(",");
+                try {
+                    // Separar camps per comes
+                    String[] fields = line.split(",");
 
-                // 4. Crear un customer amb els camps del CSV
-                Customer customer = new Customer();
-                customer.setName(fields[0].trim());
-                customer.setDescription(fields[1].trim());
-                customer.setAge(Integer.parseInt(fields[2].trim()));
-                customer.setCourse(fields[3].trim());
-                customer.setPassword(fields[4].trim());
+                    // Crear un customer amb els camps del CSV
+                    Customer customer = new Customer();
+                    customer.setName(fields[0].trim());
+                    customer.setDescription(fields[1].trim());
+                    customer.setAge(Integer.parseInt(fields[2].trim()));
+                    customer.setCourse(fields[3].trim());
+                    customer.setPassword(fields[4].trim());
 
-                // 5. Afegir customer a la base de dades
-                customerRepository.addCustomer(customer);
-                totalAdded++;
+                    // Afegir customer a la base de dades
+                    customerRepository.addCustomer(customer);
+                    totalAdded++;
+
+                } catch (Exception e) {
+                    customLogging.logError(
+                            "CustomerService",
+                            "uploadCsv",
+                            "Error en la línia " + lineNumber + " del fitxer. Missatge d'error: " + e.getMessage(),
+                            e
+                    );
+                }
             }
+
+            // Crear carpeta csv_processed si no existeix
+            Path processedDir = Paths.get("mysql/src/main/resources/public/csv_processed");
+            Files.createDirectories(processedDir);
+
+            // Guardar el fitxer CSV original a la carpeta processada
+            Path targetPath = processedDir.resolve(csvFile.getOriginalFilename());
+            Files.copy(csvFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            customLogging.logInfo(
+                    "CustomerService",
+                    "uploadCsv",
+                    "S'han guardat correctament " + totalAdded + " registres"
+            );
+
+        } catch (Exception e) {
+            customLogging.logError(
+                    "CustomerService",
+                    "uploadCsv",
+                    "Error processant el fitxer " + csvFile.getOriginalFilename(),
+                    e
+            );
+            throw new RuntimeException(e.getMessage(), e);
         }
 
-        // 6. Crear carpeta csv_processed si no existeix
-        Path processedDir = Paths.get("mysql/src/main/resources/public/csv_processed");
-        Files.createDirectories(processedDir);
-
-        // 7. Guardar el fitxer CSV original a la carpeta processada
-        Path targetPath = processedDir.resolve(csvFile.getOriginalFilename());
-        Files.copy(csvFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-        // 8. Retornar el total de registres afegits
         return totalAdded;
     }
 
-    // Funció per processar un fitxer JSON i afegir usuaris a la base de dades
-    public int uploadJson(MultipartFile jsonFile) throws IOException {
-        int totalAdded = 0; // Comptador de registres afegits
+    public int uploadJson(MultipartFile jsonFile) {
+        customLogging.logInfo("CustomerService", "uploadJson", "Carregant la informació del fitxer " + jsonFile.getOriginalFilename());
+        int totalAdded = 0;
 
-        // 1. Llegir el JSON directament des de l'InputStream del MultipartFile
-        JsonNode arrel = mapper.readTree(jsonFile.getInputStream());
+        try {
+            // Llegir el JSON directament des de l'InputStream del MultipartFile
+            JsonNode arrel = mapper.readTree(jsonFile.getInputStream());
 
-        // 2. Accedir al node "data"
-        JsonNode dataNode = arrel.path("data");
+            // Accedir al node "data"
+            JsonNode dataNode = arrel.path("data");
 
-        // 3. Accedir al node "users" que és un array
-        JsonNode usersNode = dataNode.path("customers");
+            // Accedir al node "customers" que és un array
+            JsonNode usersNode = dataNode.path("customers");
 
-        // 4. Iterar sobre cada usuari del JSON
-        for (JsonNode userNode : usersNode) {
-            // 4a. Crear un Customer amb els camps del JSON
-            Customer customer = new Customer();
-            customer.setName(userNode.path("name").asText());
-            customer.setDescription(userNode.path("description").asText());
-            customer.setAge(userNode.path("age").asInt());
-            customer.setCourse(userNode.path("course").asText());
-            customer.setPassword(userNode.path("password").asText());
+            int index = 0;
+            for (JsonNode userNode : usersNode) {
+                index++;
+                try {
+                    // Crear un Customer amb els camps del JSON
+                    Customer customer = new Customer();
+                    customer.setName(userNode.path("name").asText());
+                    customer.setDescription(userNode.path("description").asText());
+                    customer.setAge(userNode.path("age").asInt());
+                    customer.setCourse(userNode.path("course").asText());
+                    customer.setPassword(userNode.path("password").asText());
 
-            // 4b. Afegir el Customer a la base de dades
-            customerRepository.addCustomer(customer);
-            totalAdded++;
+                    // Afegir el Customer a la base de dades
+                    customerRepository.addCustomer(customer);
+                    totalAdded++;
+                } catch (Exception e) {
+                    customLogging.logError(
+                            "CustomerService",
+                            "uploadJson",
+                            "Error en l'usuari número " + index + " del fitxer. Missatge d'error: " + e.getMessage(),
+                            e
+                    );
+                }
+            }
+
+            // Crear carpeta json_processed si no existeix
+            Path processedDir = Paths.get("mysql/src/main/resources/public/json_processed");
+            Files.createDirectories(processedDir);
+
+            // Guardar el fitxer JSON a la carpeta processada
+            Path targetPath = processedDir.resolve(jsonFile.getOriginalFilename());
+            Files.copy(jsonFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            customLogging.logInfo(
+                    "CustomerService",
+                    "uploadJson",
+                    "S'han guardat correctament " + totalAdded + " registres"
+            );
+
+        } catch (Exception e) {
+            customLogging.logError(
+                    "CustomerService",
+                    "uploadJson",
+                    "Error processant el fitxer " + jsonFile.getOriginalFilename(),
+                    e
+            );
+            throw new RuntimeException(e.getMessage(), e);
         }
 
-        // 5. Crear carpeta json_processed si no existeix
-        Path processedDir = Paths.get("mysql/src/main/resources/public/json_processed");
-        Files.createDirectories(processedDir);
-
-        // 6. Guardar el fitxer JSON a la carpeta processada
-        Path targetPath = processedDir.resolve(jsonFile.getOriginalFilename());
-        Files.copy(jsonFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-        return totalAdded; // Retornar el total de registres afegits
+        return totalAdded;
     }
 
     // MÉTODES DE VALIDACIÓ

@@ -1,0 +1,29 @@
+{
+  "data": {
+    "count": 3,
+    "control": "OK",
+    "customers": [
+      {
+        "name": "Tefa",
+        "description": "Estudiant DAM",
+        "age": 20,
+        "course": "DAM",
+        "password": "12345678"
+      },
+      {
+        "name": "Anna",
+        "description": "Estudiant DAW",
+        "age": 21,
+        "course": "DAW",
+        "password": "abcdefgh"
+      },
+      {
+        "name": "Joan",
+        "description": "Estudiant ASIX",
+        "age": 22,
+        "course": "ASIX",
+        "password": "87654321"
+      }
+    ]
+  }
+}
